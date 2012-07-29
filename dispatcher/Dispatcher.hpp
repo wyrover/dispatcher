@@ -15,6 +15,7 @@
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/utility.hpp>
 
 /*!
 	The Dispatcher class maintains a queue of tasks that 
@@ -27,7 +28,7 @@
 	a deadlock; however, tasks that dispatch other
 	tasks with the same dispatcher will work fine.
 */
-class Dispatcher {
+class Dispatcher : boost::noncopyable {
 public:	
 	typedef boost::function0<void> Task;
 	typedef boost::shared_ptr<Task> TaskPtr;

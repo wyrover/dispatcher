@@ -20,11 +20,11 @@
 #include <boost/thread/thread.hpp>
 
 /*!
-	Implementation of the Dispatcher class.
+	The real Dispatcher class, with all the dependencies.
 	
 	\note All methods are thread-safe unless otherwise noted.
 */
-class Dispatcher::Impl {
+class Dispatcher::Impl : boost::noncopyable {
 public:
 	typedef Dispatcher::TaskPtr TaskPtr;
 	typedef boost::shared_ptr<boost::thread> ThreadPtr;
