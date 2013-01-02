@@ -19,6 +19,105 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 
+namespace {
+	//! calls a void() function and returns false
+	bool CallableAdapter(boost::function0<void> func)
+	{
+		func();
+		return(false);
+	}
+}
+
+Dispatchable::Dispatchable()
+	: func_(), recurring_(false), period_(), last_run_()
+{
+}
+
+Dispatchable::Dispatchable(Callable func, bool dummy)
+	: func_(func), recurring_(false), period_(), last_run_()
+{
+}
+
+Dispatchable::Dispatchable(Callable func, const time_duration& period)
+	: func_(func), recurring_(true), period_(period), last_run_()
+{
+}
+
+Dispatchable::Dispatchable(boost::function0<void> func)
+	: func_(Callable(boost::bind(CallableAdapter, func))), recurring_(false), period_(), last_run_()
+{
+}
+
+Dispatchable::Dispatchable(const Dispatchable& rhs)
+	: func_(rhs.func_), 
+	recurring_(rhs.recurring_), 
+	period_(rhs.period_), 
+	last_run_(rhs.last_run_)
+{
+}
+
+Dispatchable& Dispatchable::operator=(const Dispatchable& rhs)
+{
+	func_ = rhs.func_;
+	recurring_ = rhs.recurring_;
+	period_ = rhs.period_;
+	last_run_ = rhs.last_run_;
+	return(*this);
+}
+
+Dispatchable::~Dispatchable()
+{
+}
+
+bool Dispatchable::isValid() const
+{
+	return(!func_.empty());
+}
+
+void Dispatchable::clear()
+{
+	func_.clear();
+	recurring_ = false;
+	period_ = time_duration();
+	last_run_ = ptime();
+}
+
+bool Dispatchable::isRecurring() const
+{
+	return(recurring_);
+}
+
+bool Dispatchable::shouldRecur() const
+{
+	if(isRecurring())
+	{
+		ptime now = boost::posix_time::microsec_clock::local_time();
+		time_duration elapsed = now - last_run_;
+		return(elapsed >= period_);
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool Dispatchable::run()
+{
+	bool recur = false;
+
+	if(isValid())
+	{
+		recur = func_();
+		if(isRecurring())
+		{
+			last_run_ = boost::posix_time::microsec_clock::local_time();
+		}
+	}
+
+	return(recur);
+}
+
+
 /*!
 	The real Dispatcher class, with all the dependencies.
 	
@@ -27,7 +126,7 @@
 class Dispatcher::Impl : boost::noncopyable {
 public:
 	typedef Dispatcher::TaskPtr TaskPtr;
-	typedef boost::shared_ptr<boost::thread> ThreadPtr;
+	typedef boost::shared_ptr<boost::thread> ThreadPtr;	
 
 	Impl(): 
 		thread_(),
@@ -126,8 +225,35 @@ private:
 				// execute the task, or wait for a task to become available
 				if(isTaskValid(task))
 				{
-					(*task)();
-					task.reset();
+					bool recur = false;
+
+					// run the task
+					// note: recurring tasks will tell us when to run them
+					if(!task->isRecurring() || task->shouldRecur())
+					{
+						recur = task->run();
+
+						// ignore the return value of run for recurring tasks
+						if(task->isRecurring())
+						{
+							recur = true;
+						}
+					}
+
+					// are we done with the task, or
+					// do we need to keep it around?
+					if(recur)
+					{
+						// the task needs to be run again, so add
+						// it back to the queue.
+						dispatch(task);
+					}
+					else
+					{
+						// the task does not need to be run again,
+						// so we can get rid of it.
+						task.reset();
+					}
 				}
 				else if(!task && !stopRequested_)
 				{
@@ -144,7 +270,7 @@ private:
 
 	static bool isTaskValid(TaskPtr task)
 	{
-		return(task && *task);
+		return(task && task->isValid());
 	}
 
 	TaskPtr getNextTask()
@@ -212,6 +338,9 @@ private:
 };
 
 
+/*
+ * Dispatcher class implementation
+ */
 
 Dispatcher::Dispatcher():
 	impl_()
