@@ -126,7 +126,10 @@ bool Dispatchable::run()
 class Dispatcher::Impl : boost::noncopyable {
 public:
 	typedef Dispatcher::TaskPtr TaskPtr;
-	typedef boost::shared_ptr<boost::thread> ThreadPtr;	
+	typedef boost::shared_ptr<boost::thread> ThreadPtr;
+	typedef Dispatcher::time_duration time_duration;
+	
+	static const int DEFAULT_WAIT_TIMEOUT = 500; // milliseconds
 
 	Impl(): 
 		thread_(),
@@ -134,7 +137,8 @@ public:
 		stopRequested_(false),
 		tasks_(),
 		queueMutex_(),
-		dataReadyCondition_()
+		dataReadyCondition_(),
+		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT))
 	{
 	}
 
@@ -144,7 +148,23 @@ public:
 		stopRequested_(false),
 		tasks_(),
 		queueMutex_(),
-		dataReadyCondition_()
+		dataReadyCondition_(),
+		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT))
+	{
+		if(startImmediately)
+		{
+			start();
+		}
+	}
+
+	Impl(bool startImmediately, const time_duration& waitTimeout):
+		thread_(),
+		threadMutex_(),
+		stopRequested_(false),
+		tasks_(),
+		queueMutex_(),
+		dataReadyCondition_(),
+		waitTimeout_(waitTimeout)
 	{
 		if(startImmediately)
 		{
@@ -210,6 +230,14 @@ public:
 		return(n);
 	}
 
+	bool empty()
+	{
+		bool e = false;
+		boost::lock_guard<boost::mutex> queueLock(queueMutex_);
+		e = tasks_.empty();
+		return(e);
+	}
+
 private:
 	void run()
 	{
@@ -220,7 +248,7 @@ private:
 			{
 				boost::this_thread::interruption_point();
 
-				task = getNextTask();
+				task = getNextTask(); // returns null if queue is empty
 
 				// execute the task, or wait for a task to become available
 				if(isTaskValid(task))
@@ -257,8 +285,9 @@ private:
 				}
 				else if(!task && !stopRequested_)
 				{
+					// queue is empty, so wait for somethign to become available
 					boost::unique_lock<boost::mutex> dataReadyLock(dataReadyMutex_);
-					dataReadyCondition_.wait(dataReadyLock);
+					dataReadyCondition_.timed_wait(dataReadyLock, waitTimeout_);
 				}
 			}
 		}
@@ -334,7 +363,8 @@ private:
 	std::queue<TaskPtr> tasks_;
 	mutable boost::mutex queueMutex_;
 	mutable boost::mutex dataReadyMutex_;
-	mutable boost::condition_variable dataReadyCondition_;	
+	mutable boost::condition_variable dataReadyCondition_;
+	time_duration waitTimeout_;
 };
 
 
@@ -352,6 +382,12 @@ Dispatcher::Dispatcher(bool startImmediately):
 	impl_()
 {
 	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately));
+}
+
+Dispatcher::Dispatcher(bool startImmediately, const time_duration& wait_timeout):
+	impl_()
+{
+	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately, wait_timeout));
 }
 
 Dispatcher::~Dispatcher()
@@ -386,4 +422,9 @@ bool Dispatcher::isRunning()
 size_t Dispatcher::size()
 {
 	return impl_->size();
+}
+
+bool Dispatcher::empty()
+{
+	return impl_->empty();
 }

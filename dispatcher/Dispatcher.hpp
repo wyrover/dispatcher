@@ -92,7 +92,10 @@ private:
 	ptime last_run_;
 };
 
+
+//! a reference-counted pointer to a Dispatchable object
 typedef boost::shared_ptr<Dispatchable> DispatchablePtr;
+
 
 /*!
 	The Dispatcher class maintains a queue of tasks that 
@@ -109,12 +112,27 @@ class Dispatcher : boost::noncopyable {
 public:	
 	typedef Dispatchable Task;
 	typedef DispatchablePtr TaskPtr;
+	typedef boost::posix_time::time_duration time_duration;
 
 	//! construct a Dispatcher that must be started manually
 	Dispatcher();
 
 	//! construct a Dispatcher and optionally start it immediately.
 	explicit Dispatcher(bool startImmediately);
+
+	/*!
+		construct a Dispatcher and optionally start it immediately.
+		also specify the maximum amount of time that the worker thread
+		should wait for a new task to be dispatched before waking up.
+
+		\note: It is possible to enter a situation where the worker thread
+		is going to sleep at the same time a new task is dispatched. In
+		this situation, the thread may not wake up for a long time, so
+		it is important to tune the timeout value to whatever tolerance you
+		need. This usually does not happen. This is just a fallback in case
+		it does. The default timeout period is 500 milliseconds
+	*/
+	explicit Dispatcher(bool startImmediately, const time_duration& waitTimeout);
 
 	//! destroying the Dispatcher stops the worker thread.
 	~Dispatcher();
@@ -136,6 +154,9 @@ public:
 
 	//! get the number of tasks in the queue
 	size_t size() ;
+
+	//! check if size() == 0
+	bool empty();
 
 private:
 	class Impl;

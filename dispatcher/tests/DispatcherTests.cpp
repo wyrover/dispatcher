@@ -13,6 +13,7 @@
 #include "vlt.hpp"
 #include "Dispatcher.hpp"
 #include <boost/limits.hpp>
+#include <vector>
 
 namespace {
 	
@@ -26,6 +27,7 @@ namespace {
 		{
 			taskInvoked = false;
 			a = 0;
+			recurCounter = 0;
 		}
 
 		void myTask(int a)
@@ -40,15 +42,27 @@ namespace {
 			d.dispatch(task);
 		}
 
+		bool oneshotTask()
+		{
+			++recurCounter;
+			return false;
+		}
+
+		bool recurTenTimes()
+		{
+			return (++recurCounter < 10);
+		}
+
 		bool taskInvoked;
 		int a;
+		int recurCounter;
 	};
-
 
 	TEST(Dispatcher, Construct)
 	{
 		Dispatcher d1;
 		Dispatcher d2(false);
+		Dispatcher d3(false, boost::posix_time::milliseconds(5000));
 	}
 
 	TEST(Dispatcher, StartAndStop)
@@ -126,11 +140,63 @@ namespace {
 		TEST_EQUALS(d.size(), static_cast<size_t>(NUM_TASKS));
 	}
 
+	TEST(Dispatcher, Empty)
+	{
+		TestFixture f;
+		Dispatcher d;
+		Dispatcher::TaskPtr task;
+
+		TEST_EQUALS(d.isRunning(), false);
+		TEST_EQUALS(d.empty(), true);
+
+		// add invalid task (dispatch is ignored)
+		task = Dispatcher::TaskPtr(new Dispatcher::Task());
+		d.dispatch(task);
+
+		TEST_EQUALS(d.empty(), true);
+
+		// add valid task
+		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f, 10)));
+		d.dispatch(task);
+
+		TEST_EQUALS(d.empty(), false);
+	}
+	
+	TEST(Dispatcher, OneShotTask)
+	{
+		TestFixture f;
+		Dispatcher d(true);
+		Dispatcher::TaskPtr task;
+
+		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::oneshotTask, &f),true));
+		d.dispatch(task);
+
+		// wait until tasks are done executing
+		while(f.recurCounter < 1);
+
+		TEST_EQUALS(f.recurCounter, 1);
+	}
+
+	TEST(Dispatcher, recurTenTimes)
+	{
+		TestFixture f;
+		Dispatcher d(true);
+		Dispatcher::TaskPtr task;
+
+		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::recurTenTimes, &f),true));
+		d.dispatch(task);
+
+		// wait until tasks are done executing
+		while(f.recurCounter < 10);
+
+		TEST_EQUALS(f.recurCounter, 10);
+	}
+	
 	TEST(Dispatcher, HeavyWorkLoad)
 	{
 		const int NUM_TASKS = 1000;
 
-		TestFixture f[NUM_TASKS];
+		std::vector<TestFixture> f(NUM_TASKS);
 		Dispatcher d(true);
 
 		for(int i = 0; i < NUM_TASKS; ++i)
@@ -151,7 +217,7 @@ namespace {
 	{
 		const int NUM_TASKS = 10000;
 
-		TestFixture f[NUM_TASKS];
+		std::vector<TestFixture> f(NUM_TASKS);
 		Dispatcher d(true);
 
 		for(int i = 0; i < NUM_TASKS; ++i)
@@ -172,7 +238,7 @@ namespace {
 	{
 		const int NUM_TASKS = 100000;
 
-		TestFixture f[NUM_TASKS];
+		std::vector<TestFixture> f(NUM_TASKS);
 		Dispatcher d(true);
 
 		for(int i = 0; i < NUM_TASKS; ++i)
