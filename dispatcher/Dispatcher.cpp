@@ -85,6 +85,11 @@ public:
 			stopRequested_ = false;
 			createWorkerThread();
 		}
+		else
+		{
+			// thread is already created, so try to wakeup the worker thread
+			dataReadyCondition_.notify_all();
+		}
 	}
 
 	void stop()

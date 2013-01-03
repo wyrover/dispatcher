@@ -25,6 +25,20 @@
 	methods on the same Dispatcher will likely cause
 	a deadlock; however, tasks that dispatch other
 	tasks with the same dispatcher will work fine.
+
+	\warning It is possible to enter a situation where 
+	the worker thread goes to sleep at the same time a 
+	new task is dispatched. In this situation, the thread
+	may not wake up for a long time, so it is important to
+	tune the timeout value to whatever tolerance you need. 
+	This usually does not happen. This is just a fallback 
+	in case it does. The default timeout period is 500 
+	milliseconds.
+
+	\note if the dispatcher is already running, calling 
+	start() again will wake the worker thread. you may do
+	this after dispatching tasks to ensure that the worker 
+	thread isn't sleeping while there is work to be done.
 */
 class Dispatcher : boost::noncopyable {
 public:	
@@ -43,20 +57,18 @@ public:
 		construct a Dispatcher and optionally start it immediately.
 		also specify the maximum amount of time that the worker thread
 		should wait for a new task to be dispatched before waking up.
-
-		\note: It is possible to enter a situation where the worker thread
-		is going to sleep at the same time a new task is dispatched. In
-		this situation, the thread may not wake up for a long time, so
-		it is important to tune the timeout value to whatever tolerance you
-		need. This usually does not happen. This is just a fallback in case
-		it does. The default timeout period is 500 milliseconds
 	*/
 	explicit Dispatcher(bool startImmediately, const time_duration& waitTimeout);
 
 	//! destroying the Dispatcher stops the worker thread.
 	~Dispatcher();
 
-	//! starts the dispatch worker thread
+	/*!
+		starts the dispatch worker thread. 
+		
+		\note if the dispatcher is already running, calling start() again 
+		will wake the worker thread.
+	*/
 	void start();
 
 	//! stops the dispatch worker thread
