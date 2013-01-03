@@ -27,7 +27,6 @@ namespace {
 		{
 			taskInvoked = false;
 			a = 0;
-			recurCounter = 0;
 		}
 
 		void myTask(int a)
@@ -42,20 +41,8 @@ namespace {
 			d.dispatch(task);
 		}
 
-		bool oneshotTask()
-		{
-			++recurCounter;
-			return false;
-		}
-
-		bool recurTenTimes()
-		{
-			return (++recurCounter < 10);
-		}
-
 		bool taskInvoked;
 		int a;
-		int recurCounter;
 	};
 
 	TEST(Dispatcher, Construct)
@@ -124,7 +111,7 @@ namespace {
 		for(int i = 0; i < NUM_TASKS; ++i)
 		{
 			// add invalid task
-			task = Dispatcher::TaskPtr(new Dispatcher::Task());
+			task = Dispatcher::TaskPtr();
 			d.dispatch(task);
 		}
 
@@ -150,7 +137,7 @@ namespace {
 		TEST_EQUALS(d.empty(), true);
 
 		// add invalid task (dispatch is ignored)
-		task = Dispatcher::TaskPtr(new Dispatcher::Task());
+		task = Dispatcher::TaskPtr();
 		d.dispatch(task);
 
 		TEST_EQUALS(d.empty(), true);
@@ -161,37 +148,7 @@ namespace {
 
 		TEST_EQUALS(d.empty(), false);
 	}
-	
-	TEST(Dispatcher, OneShotTask)
-	{
-		TestFixture f;
-		Dispatcher d(true);
-		Dispatcher::TaskPtr task;
-
-		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::oneshotTask, &f),true));
-		d.dispatch(task);
-
-		// wait until tasks are done executing
-		while(f.recurCounter < 1);
-
-		TEST_EQUALS(f.recurCounter, 1);
-	}
-
-	TEST(Dispatcher, recurTenTimes)
-	{
-		TestFixture f;
-		Dispatcher d(true);
-		Dispatcher::TaskPtr task;
-
-		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::recurTenTimes, &f),true));
-		d.dispatch(task);
-
-		// wait until tasks are done executing
-		while(f.recurCounter < 10);
-
-		TEST_EQUALS(f.recurCounter, 10);
-	}
-	
+		
 	TEST(Dispatcher, HeavyWorkLoad)
 	{
 		const int NUM_TASKS = 1000;
@@ -260,22 +217,6 @@ namespace {
 		Dispatcher d(true);
 		Dispatcher::TaskPtr nullTaskPtr;
 		d.dispatch(nullTaskPtr);
-	}
-
-	TEST(Dispatcher, NullTask)
-	{
-		Dispatcher d(true);
-		Dispatcher::TaskPtr nullTask(new Dispatcher::Task());
-		d.dispatch(nullTask);
-	}
-
-	TEST(Dispatcher, ClearedTask)
-	{
-		TestFixture f;
-		Dispatcher d(true);
-		Dispatcher::TaskPtr clearedTask(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f, 10)));
-		clearedTask->clear();
-		d.dispatch(clearedTask);
 	}
 
 	TEST(Dispatcher, StartStopStress)

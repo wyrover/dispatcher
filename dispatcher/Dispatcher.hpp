@@ -14,7 +14,6 @@
 #define DISPATCHER_HPP_INCLUDED
 
 #include "Dispatchables.hpp"
-#include <boost/utility.hpp>
 
 /*!
 	The Dispatcher class maintains a queue of tasks that 
@@ -29,7 +28,8 @@
 */
 class Dispatcher : boost::noncopyable {
 public:	
-	typedef Dispatchable Task;
+	typedef DispatchableFunction Task; // this is chosen as the default 
+	                                   // Dispatchable for backwards compatibility
 	typedef DispatchablePtr TaskPtr;
 	typedef boost::posix_time::time_duration time_duration;
 

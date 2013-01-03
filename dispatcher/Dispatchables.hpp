@@ -16,83 +16,109 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/utility.hpp>
 
 /*!
-	The Dispatchable class is the context for an executable task.
-	It maintains a function object, which is the task itself, plus
-	timing information for recurring tasks.
+	The Dispatchable interface abstracts a task that can be run
+	via the Dispatcher. It also allows for task recurrence.
 */
 class Dispatchable {
 public:
-	typedef boost::function0<bool> Callable;
-	typedef boost::posix_time::time_duration time_duration;
-	typedef boost::posix_time::ptime ptime;
+	virtual ~Dispatchable() {};
 
-	//! Construct an invalid Dispatchable object
-	Dispatchable();
+	//! execute the task
+	virtual void run() = 0;
 
 	/*!
-		Construct a Dispatchable object
+		if the task is recurring, it will be added back
+		to the queue so that it can be evaluated in the future.
 
-		\param func the function to be run when this task is executed. 
-		the return value allows the task to recur.
-		\param dummy unused. it only exists to resolve ambiguity between constructors
+		\return true if the task is recurring
 	*/
-	explicit Dispatchable(Callable func, bool dummy);
+	virtual bool isRecurring() = 0;
 
 	/*!
-		Construct a Dispatchable object that will recur
-
-		\param func the function to be run when this task is executed. 
-		\param period the minimum amount of time to wait before executing the task again
+		\return true if it is time for the task to execute 
+		\note if both shouldExecute() and isRecurring() return
+		false, then this task will never be executed.
 	*/
-	explicit Dispatchable(Callable func, const time_duration& period);
-
-	/*!
-		Construct a Dispatchable object
-
-		\param func the function to be run when this task is executed. 
-
-		\note this constructor exists for backwards compatibility
-	*/
-	explicit Dispatchable(boost::function0<void> func);
-
-	//! Copy a Dispatchable object
-	Dispatchable(const Dispatchable& rhs);
-
-	//! Destroy a Dispatchable object
-	~Dispatchable();
-
-	//! Assignment operator
-	Dispatchable& operator=(const Dispatchable& rhs);
-
-	//! \return true if function object is not null
-	bool isValid() const;
-
-	//! make this Dispatchable object invalid
-	void clear();
-
-	//! \return true if the task is recurring
-	bool isRecurring() const;
-
-	//! \return true if it is time for the task to recur
-	bool shouldRecur() const;
-
-	/*!
-		Execute the task.
-		\return true if the task should be executed again, false otherwise.
-	*/
-	bool run();
-
-private:
-	Callable func_;
-	bool recurring_;
-	time_duration period_;
-	ptime last_run_;
+	virtual bool shouldExecute() = 0;
 };
 
 
 //! a reference-counted pointer to a Dispatchable object
 typedef boost::shared_ptr<Dispatchable> DispatchablePtr;
+
+
+/*!
+	The DispatchableFunction class is a wrapper to use
+	a function object as a dispatchable task.
+*/
+class DispatchableFunction : public Dispatchable, boost::noncopyable {
+public:
+	typedef boost::function0<void> Callable;
+
+	/*!
+		Construct a Dispatchable object
+
+		\param func the function to be run when this task is executed. 
+	*/
+	explicit DispatchableFunction(Callable func);
+
+	//! Destroy a Dispatchable object
+	virtual ~DispatchableFunction();
+
+	//! \return true if the task is recurring
+	virtual bool isRecurring();
+
+	//! \return true if it is time for the task to execute 
+	virtual bool shouldExecute();
+
+	//! Execute the task.
+	virtual void run();
+
+private:
+	Callable func_;
+};
+
+
+/*!
+	The RecurringDispatchableFunction class is a wrapper
+	to use a function object as a dispatchable task, and 
+	allows for recurrence.
+	
+	\note this task will recur forever
+*/
+class RecurringDispatchableFunction : public DispatchableFunction {
+public:
+	typedef boost::function0<void> Callable;
+	typedef boost::posix_time::time_duration time_duration;
+	typedef boost::posix_time::ptime ptime;
+
+	/*!
+		Construct a Dispatchable object
+
+		\param func the function to be run when this task is executed. 
+		\param period the minimum amount of to wait before executing the task again.
+	*/
+	explicit RecurringDispatchableFunction(Callable func, const time_duration& period);
+
+	//! Destroy a Dispatchable object
+	virtual ~RecurringDispatchableFunction();
+
+	//! \return true if the task is recurring
+	virtual bool isRecurring();
+
+	//! \return true if it is time for the task to execute 
+	virtual bool shouldExecute();
+
+	//! Execute the task.
+	virtual void run();
+
+private:
+	Callable func_;
+	time_duration period_;
+	ptime last_run_;
+};
 
 #endif //DISPATCHABLES_HPP_INCLUDED

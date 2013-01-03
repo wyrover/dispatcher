@@ -153,24 +153,15 @@ private:
 				// execute the task, or wait for a task to become available
 				if(isTaskValid(task))
 				{
-					bool recur = false;
-
 					// run the task
-					// note: recurring tasks will tell us when to run them
-					if(!task->isRecurring() || task->shouldRecur())
+					if(task->shouldExecute())
 					{
-						recur = task->run();
-
-						// ignore the return value of run for recurring tasks
-						if(task->isRecurring())
-						{
-							recur = true;
-						}
+						task->run();
 					}
 
 					// are we done with the task, or
 					// do we need to keep it around?
-					if(recur)
+					if(task->isRecurring())
 					{
 						// the task needs to be run again, so add
 						// it back to the queue.
@@ -199,7 +190,7 @@ private:
 
 	static bool isTaskValid(TaskPtr task)
 	{
-		return(task && task->isValid());
+		return(task);
 	}
 
 	TaskPtr getNextTask()

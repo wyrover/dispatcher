@@ -64,6 +64,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dispatchables.cpp" />
+    <ClCompile Include="tests\DispatchablesTests.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="tests\DispatcherTests.cpp" />
     <ClCompile Include="tests\main.cpp" />
