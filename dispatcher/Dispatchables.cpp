@@ -72,3 +72,32 @@ void RecurringDispatchableFunction::run()
 {
 	DispatchableFunction::run();
 }
+
+
+/*
+ * IterativeDispatchableFunction class implementation
+ */
+IterativeDispatchableFunction::IterativeDispatchableFunction(Callable func, size_t times_to_repeat)
+	: DispatchableFunction(func), times_to_repeat_(times_to_repeat), count_(0)
+{
+}
+
+IterativeDispatchableFunction::~IterativeDispatchableFunction()
+{
+}
+
+bool IterativeDispatchableFunction::isRecurring()
+{
+	return(count_ < times_to_repeat_);
+}
+
+bool IterativeDispatchableFunction::shouldExecute()
+{
+	return(count_ < times_to_repeat_);
+}
+
+void IterativeDispatchableFunction::run()
+{
+	DispatchableFunction::run();
+	++count_;
+}

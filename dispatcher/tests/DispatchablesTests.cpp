@@ -13,6 +13,7 @@
 #include "vlt.hpp"
 #include "Dispatcher.hpp"
 #include <boost/limits.hpp>
+#include <boost/thread.hpp>
 #include <vector>
 
 namespace {
@@ -25,21 +26,15 @@ namespace {
 
 		void reset()
 		{
-			recurCounter = 0;
+			counter = 0;
 		}
 
-		bool oneshotTask()
+		void increment()
 		{
-			++recurCounter;
-			return false;
+			++counter;
 		}
 
-		bool recurTenTimes()
-		{
-			return (++recurCounter < 10);
-		}
-
-		int recurCounter;
+		int counter;
 	};
 
 	TEST(Dispatchables, OneShotTask)
@@ -48,13 +43,13 @@ namespace {
 		Dispatcher d(true);
 		DispatchablePtr task;
 
-		task = DispatchablePtr(new DispatchableFunction(boost::bind(&TestFixture::oneshotTask, &f)));
+		task = DispatchablePtr(new DispatchableFunction(boost::bind(&TestFixture::increment, &f)));
 		d.dispatch(task);
 
 		// wait until tasks are done executing
-		while(f.recurCounter < 1);
+		while(f.counter < 1);
 
-		TEST_EQUALS(f.recurCounter, 1);
+		TEST_EQUALS(f.counter, 1);
 	}
 
 	TEST(Dispatchables, OneShotTaskBackwardsCompatibility)
@@ -63,29 +58,48 @@ namespace {
 		Dispatcher d(true);
 		Dispatcher::TaskPtr task;
 
-		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::oneshotTask, &f)));
+		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::increment, &f)));
 		d.dispatch(task);
 
 		// wait until tasks are done executing
-		while(f.recurCounter < 1);
+		while(f.counter < 1);
 
-		TEST_EQUALS(f.recurCounter, 1);
+		TEST_EQUALS(f.counter, 1);
 	}
 
-	TEST(Dispatchables, recurTenTimes)
+	TEST(Dispatchables, recurringTask)
 	{
 		TestFixture f;
 		Dispatcher d(true);
 		DispatchablePtr task;
 
-		boost::posix_time::time_duration period = boost::posix_time::milliseconds(500);
+		int period_ms = 100;
+		boost::posix_time::time_duration period = boost::posix_time::milliseconds(period_ms);		
+		task = DispatchablePtr(new RecurringDispatchableFunction(boost::bind(&TestFixture::increment, &f),period));
 
-		task = DispatchablePtr(new RecurringDispatchableFunction(boost::bind(&TestFixture::recurTenTimes, &f),period));
+		d.dispatch(task);
+
+		// sleep for triple the period to ensure it was at least called twice
+		// note: this is dependent on timer resolution. the goal is just to
+		// ensure that the task recurs approximately within in the period
+		// requested.
+		boost::this_thread::sleep(boost::posix_time::milliseconds(period_ms*3));
+
+		TEST_GREATER_THAN(f.counter, 2);
+	}
+
+	TEST(Dispatchables, iterativeTask)
+	{
+		TestFixture f;
+		Dispatcher d(true);
+		DispatchablePtr task;
+
+		task = DispatchablePtr(new IterativeDispatchableFunction(boost::bind(&TestFixture::increment, &f),100));
 		d.dispatch(task);
 
 		// wait until tasks are done executing
-		while(f.recurCounter < 10);
+		while(f.counter < 100);
 
-		TEST_EQUALS(f.recurCounter, 10);
+		TEST_EQUALS(f.counter, 100);
 	}
 } //namespace
