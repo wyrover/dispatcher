@@ -39,6 +39,10 @@
 	start() again will wake the worker thread. you may do
 	this after dispatching tasks to ensure that the worker 
 	thread isn't sleeping while there is work to be done.
+
+	\note if you need real-time performance, you must
+	disable the worker thread's wait behavior. this will
+	prevent it from going idle.
 */
 class Dispatcher : boost::noncopyable {
 public:	
@@ -59,6 +63,14 @@ public:
 		should wait for a new task to be dispatched before waking up.
 	*/
 	explicit Dispatcher(bool startImmediately, const time_duration& waitTimeout);
+
+	/*!
+		construct a Dispatcher and optionally start it immediately.
+		also choose to disable the worker thread's wait behavior.
+		This will improve performance so that you can use it in
+		real-time applications.
+	*/
+	explicit Dispatcher(bool startImmediately, bool disableWait);
 
 	//! destroying the Dispatcher stops the worker thread.
 	~Dispatcher();

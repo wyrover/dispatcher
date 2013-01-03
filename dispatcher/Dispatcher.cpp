@@ -38,7 +38,8 @@ public:
 		tasks_(),
 		queueMutex_(),
 		dataReadyCondition_(),
-		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT))
+		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT)),
+		waitEnabled_(true)
 	{
 	}
 
@@ -49,7 +50,8 @@ public:
 		tasks_(),
 		queueMutex_(),
 		dataReadyCondition_(),
-		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT))
+		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT)),
+		waitEnabled_(true)
 	{
 		if(startImmediately)
 		{
@@ -64,7 +66,24 @@ public:
 		tasks_(),
 		queueMutex_(),
 		dataReadyCondition_(),
-		waitTimeout_(waitTimeout)
+		waitTimeout_(waitTimeout),
+		waitEnabled_(true)
+	{
+		if(startImmediately)
+		{
+			start();
+		}
+	}
+
+	Impl(bool startImmediately, bool disableWait): 
+		thread_(),
+		threadMutex_(),
+		stopRequested_(false),
+		tasks_(),
+		queueMutex_(),
+		dataReadyCondition_(),
+		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT)),
+		waitEnabled_(!disableWait)
 	{
 		if(startImmediately)
 		{
@@ -179,7 +198,7 @@ private:
 						task.reset();
 					}
 				}
-				else if(!task && !stopRequested_)
+				else if(waitEnabled_ && !task && !stopRequested_)
 				{
 					// queue is empty, so wait for somethign to become available
 					boost::unique_lock<boost::mutex> dataReadyLock(dataReadyMutex_);
@@ -261,6 +280,7 @@ private:
 	mutable boost::mutex dataReadyMutex_;
 	mutable boost::condition_variable dataReadyCondition_;
 	time_duration waitTimeout_;
+	bool waitEnabled_;
 };
 
 
@@ -280,10 +300,16 @@ Dispatcher::Dispatcher(bool startImmediately):
 	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately));
 }
 
-Dispatcher::Dispatcher(bool startImmediately, const time_duration& wait_timeout):
+Dispatcher::Dispatcher(bool startImmediately, const time_duration& waitTimeout):
 	impl_()
 {
-	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately, wait_timeout));
+	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately, waitTimeout));
+}
+
+Dispatcher::Dispatcher(bool startImmediately, bool disableWait):
+	impl_()
+{
+	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately,disableWait));
 }
 
 Dispatcher::~Dispatcher()
