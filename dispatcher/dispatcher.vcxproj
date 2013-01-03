@@ -63,12 +63,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Dispatchables.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="tests\DispatcherTests.cpp" />
     <ClCompile Include="tests\main.cpp" />
     <ClCompile Include="tests\vlt.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Dispatchables.hpp" />
     <ClInclude Include="Dispatcher.hpp" />
     <ClInclude Include="tests\vlt.hpp" />
   </ItemGroup>

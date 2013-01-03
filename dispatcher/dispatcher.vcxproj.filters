@@ -30,6 +30,9 @@
     <ClCompile Include="tests\DispatcherTests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
+    <ClCompile Include="Dispatchables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dispatcher.hpp">
@@ -37,6 +40,9 @@
     </ClInclude>
     <ClInclude Include="tests\vlt.hpp">
       <Filter>tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Dispatchables.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
