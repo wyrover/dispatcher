@@ -15,7 +15,12 @@
 #ifndef DISPATCHER_HPP_INCLUDED
 #define DISPATCHER_HPP_INCLUDED
 
-#include "Dispatchables.hpp"
+#include "Dispatchable.hpp"
+#include <boost/shared_ptr.hpp>
+#include <boost/utility.hpp>
+
+//! a reference-counted pointer to a Dispatchable object
+typedef boost::shared_ptr<Dispatchable> DispatchablePtr;
 
 /*!
 	The Dispatcher class maintains a queue of tasks that 
@@ -32,11 +37,8 @@
 	disable the worker thread's wait behavior. This will
 	prevent it from going idle.
 */
-class Dispatcher : boost::noncopyable {
+class Dispatcher : private boost::noncopyable {
 public:	
-	typedef DispatchableFunction Task; // this is chosen as the default 
-	                                   // Dispatchable for backwards compatibility
-	typedef DispatchablePtr TaskPtr;
 
 	//! construct a Dispatcher that must be started manually
 	Dispatcher();
@@ -70,7 +72,7 @@ public:
 	bool isRunning();
 
 	//! adds a task to the dispatch queue
-	void dispatch(TaskPtr task);
+	void dispatch(DispatchablePtr task);
 
 	//! clear all tasks from the dispatch queue
 	void clear();

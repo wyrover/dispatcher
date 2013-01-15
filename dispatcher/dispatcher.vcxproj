@@ -71,6 +71,7 @@
     <ClCompile Include="tests\vlt.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Dispatchable.hpp" />
     <ClInclude Include="Dispatchables.hpp" />
     <ClInclude Include="Dispatcher.hpp" />
     <ClInclude Include="tests\vlt.hpp" />

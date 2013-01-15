@@ -19,15 +19,15 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 /*!
 	The real Dispatcher class, with all the dependencies.
 	
 	\note All methods are thread-safe unless otherwise noted.
 */
-class Dispatcher::Impl : boost::noncopyable {
+class Dispatcher::Impl : private boost::noncopyable {
 public:
-	typedef Dispatcher::TaskPtr TaskPtr;
 	typedef boost::shared_ptr<boost::thread> ThreadPtr;
 
 	Impl(): 
@@ -101,7 +101,7 @@ public:
 		}
 	}
 
-	void dispatch(TaskPtr task)
+	void dispatch(DispatchablePtr task)
 	{
 		if(isTaskValid(task))
 		{
@@ -147,7 +147,7 @@ private:
 	{
 		try
 		{
-			TaskPtr task;
+			DispatchablePtr task;
 			while(!stopRequested_)
 			{
 				boost::this_thread::interruption_point();
@@ -195,14 +195,14 @@ private:
 		}
 	}
 
-	static bool isTaskValid(TaskPtr task)
+	static bool isTaskValid(DispatchablePtr task)
 	{
 		return(task);
 	}
 
-	TaskPtr getNextTask()
+	DispatchablePtr getNextTask()
 	{
-		TaskPtr task;
+		DispatchablePtr task;
 		boost::lock_guard<boost::mutex> queueLock(queueMutex_);
 		if(!tasks_.empty())
 		{
@@ -258,7 +258,7 @@ private:
 	ThreadPtr thread_;
 	mutable boost::recursive_mutex threadMutex_;
 	volatile bool stopRequested_;
-	std::queue<TaskPtr> tasks_;
+	std::queue<DispatchablePtr> tasks_;
 	mutable boost::mutex queueMutex_;
 	mutable boost::condition_variable dataReadyCondition_;
 	bool waitEnabled_;
@@ -301,7 +301,7 @@ void Dispatcher::stop()
 	impl_->stop();
 }
 
-void Dispatcher::dispatch(TaskPtr task)
+void Dispatcher::dispatch(DispatchablePtr task)
 {
 	impl_->dispatch(task);
 }

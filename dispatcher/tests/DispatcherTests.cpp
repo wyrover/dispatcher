@@ -14,6 +14,7 @@
 
 #include "vlt.hpp"
 #include "Dispatcher.hpp"
+#include "Dispatchables.hpp"
 #include <boost/limits.hpp>
 #include <vector>
 
@@ -39,7 +40,7 @@ namespace {
 
 		void myRentrantTask(Dispatcher& d, int a)
 		{
-			Dispatcher::TaskPtr task(new Dispatcher::Task(boost::bind(&TestFixture::myTask, this, a)));
+			DispatchablePtr task(new DispatchableFunction(boost::bind(&TestFixture::myTask, this, a)));
 			d.dispatch(task);
 		}
 
@@ -78,7 +79,7 @@ namespace {
 		TestFixture f;
 		Dispatcher d(true);
 
-		Dispatcher::TaskPtr task(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f, 10)));
+		DispatchablePtr task(new DispatchableFunction(boost::bind(&TestFixture::myTask, &f, 10)));
 		d.dispatch(task);
 
 		while(!f.taskInvoked) {}; // wait for task to be invoked
@@ -91,7 +92,7 @@ namespace {
 		TestFixture f;
 		Dispatcher d(true);
 
-		Dispatcher::TaskPtr task(new Dispatcher::Task(boost::bind(&TestFixture::myRentrantTask, &f, boost::ref(d), 10)));
+		DispatchablePtr task(new DispatchableFunction(boost::bind(&TestFixture::myRentrantTask, &f, boost::ref(d), 10)));
 		d.dispatch(task);
 
 		while(!f.taskInvoked) {}; // wait for task to be invoked
@@ -103,7 +104,7 @@ namespace {
 	{
 		TestFixture f;
 		Dispatcher d;
-		Dispatcher::TaskPtr task;
+		DispatchablePtr task;
 
 		TEST_EQUALS(d.isRunning(), false);
 
@@ -112,7 +113,7 @@ namespace {
 		for(int i = 0; i < NUM_TASKS; ++i)
 		{
 			// add invalid task
-			task = Dispatcher::TaskPtr();
+			task = DispatchablePtr();
 			d.dispatch(task);
 		}
 
@@ -121,7 +122,7 @@ namespace {
 		for(int i = 0; i < NUM_TASKS; ++i)
 		{
 			// add valid task
-			task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f, 10)));
+			task = DispatchablePtr(new DispatchableFunction(boost::bind(&TestFixture::myTask, &f, 10)));
 			d.dispatch(task);
 		}
 
@@ -132,19 +133,19 @@ namespace {
 	{
 		TestFixture f;
 		Dispatcher d;
-		Dispatcher::TaskPtr task;
+		DispatchablePtr task;
 
 		TEST_EQUALS(d.isRunning(), false);
 		TEST_EQUALS(d.empty(), true);
 
 		// add invalid task (dispatch is ignored)
-		task = Dispatcher::TaskPtr();
+		task = DispatchablePtr();
 		d.dispatch(task);
 
 		TEST_EQUALS(d.empty(), true);
 
 		// add valid task
-		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f, 10)));
+		task = DispatchablePtr(new DispatchableFunction(boost::bind(&TestFixture::myTask, &f, 10)));
 		d.dispatch(task);
 
 		TEST_EQUALS(d.empty(), false);
@@ -159,7 +160,7 @@ namespace {
 
 		for(int i = 0; i < NUM_TASKS; ++i)
 		{
-			Dispatcher::TaskPtr task(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f[i], i)));
+			DispatchablePtr task(new DispatchableFunction(boost::bind(&TestFixture::myTask, &f[i], i)));
 			d.dispatch(task);
 		}
 
@@ -180,7 +181,7 @@ namespace {
 
 		for(int i = 0; i < NUM_TASKS; ++i)
 		{
-			Dispatcher::TaskPtr task(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f[i], i)));
+			DispatchablePtr task(new DispatchableFunction(boost::bind(&TestFixture::myTask, &f[i], i)));
 			d.dispatch(task);
 		}
 
@@ -201,7 +202,7 @@ namespace {
 
 		for(int i = 0; i < NUM_TASKS; ++i)
 		{
-			Dispatcher::TaskPtr task(new Dispatcher::Task(boost::bind(&TestFixture::myTask, &f[i], i)));
+			DispatchablePtr task(new DispatchableFunction(boost::bind(&TestFixture::myTask, &f[i], i)));
 			d.dispatch(task);
 		}
 
@@ -216,7 +217,7 @@ namespace {
 	TEST(Dispatcher, NullTaskPtr)
 	{
 		Dispatcher d(true);
-		Dispatcher::TaskPtr nullTaskPtr;
+		DispatchablePtr nullTaskPtr;
 		d.dispatch(nullTaskPtr);
 	}
 
@@ -258,20 +259,20 @@ namespace {
 	{
 		Dispatcher testee;
 		Dispatcher worker(true);
-		Dispatcher::TaskPtr task;
+		DispatchablePtr task;
 		
 		const int NUM_TESTS = 1000;
 
 		for(int i = 0; i < NUM_TESTS; ++i)
 		{
 			// start testee
-			task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&Dispatcher::start, &testee)));
+			task = DispatchablePtr(new DispatchableFunction(boost::bind(&Dispatcher::start, &testee)));
 			worker.dispatch(task);
 			while(!testee.isRunning()) {}; //wait until started
 			TEST_EQUALS(testee.isRunning(), true);
 
 			// stop testee
-			task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&Dispatcher::stop, &testee)));
+			task = DispatchablePtr(new DispatchableFunction(boost::bind(&Dispatcher::stop, &testee)));
 			worker.dispatch(task);
 			while(testee.isRunning()) {}; //wait until stopped
 			TEST_EQUALS(testee.isRunning(), false);
@@ -282,18 +283,18 @@ namespace {
 	{
 		Dispatcher testee;
 		Dispatcher worker(true);
-		Dispatcher::TaskPtr task;
+		DispatchablePtr task;
 		
 		const int NUM_TESTS = 1000;
 
 		for(int i = 0; i < NUM_TESTS; ++i)
 		{
 			// start testee
-			task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&Dispatcher::start, &testee)));
+			task = DispatchablePtr(new DispatchableFunction(boost::bind(&Dispatcher::start, &testee)));
 			worker.dispatch(task);
 
 			// stop testee
-			task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&Dispatcher::stop, &testee)));
+			task = DispatchablePtr(new DispatchableFunction(boost::bind(&Dispatcher::stop, &testee)));
 			worker.dispatch(task);
 		}
 	}

@@ -14,6 +14,7 @@
 
 #include "vlt.hpp"
 #include "Dispatcher.hpp"
+#include "Dispatchables.hpp"
 #include <boost/limits.hpp>
 #include <boost/thread.hpp>
 #include <vector>
@@ -46,21 +47,6 @@ namespace {
 		DispatchablePtr task;
 
 		task = DispatchablePtr(new DispatchableFunction(boost::bind(&TestFixture::increment, &f)));
-		d.dispatch(task);
-
-		// wait until tasks are done executing
-		while(f.counter < 1);
-
-		TEST_EQUALS(f.counter, 1);
-	}
-
-	TEST(Dispatchables, OneShotTaskBackwardsCompatibility)
-	{
-		TestFixture f;
-		Dispatcher d(true);
-		Dispatcher::TaskPtr task;
-
-		task = Dispatcher::TaskPtr(new Dispatcher::Task(boost::bind(&TestFixture::increment, &f)));
 		d.dispatch(task);
 
 		// wait until tasks are done executing

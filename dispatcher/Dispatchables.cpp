@@ -9,11 +9,10 @@
 */
 /*!
 	\file DispatchableFunctions.cpp 
-	\brief Implementation of the DispatchableFunction class and subclasses. 
+	\brief Implementation of Dispatchable subclasses. 
 */
 
 #include "Dispatchables.hpp"
-#include <boost/bind.hpp>
 
 /*
  * DispatchableFunction class implementation

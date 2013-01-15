@@ -9,54 +9,22 @@
 */
 /*!
 	\file Dispatchables.hpp 
-	\brief Header file for the Dispatchable class, and subclasses.
+	\brief Header file for Dispatchable subclasses.
 */
 
 #ifndef DISPATCHABLES_HPP_INCLUDED
 #define DISPATCHABLES_HPP_INCLUDED
 
+#include "Dispatchable.hpp"
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/utility.hpp>
-
-/*!
-	The Dispatchable interface abstracts a task that can be run
-	via the Dispatcher. It also allows for task recurrence.
-*/
-class Dispatchable {
-public:
-	virtual ~Dispatchable() {};
-
-	//! execute the task
-	virtual void run() = 0;
-
-	/*!
-		if the task is recurring, it will be added back
-		to the queue so that it can be evaluated in the future.
-
-		\return true if the task is recurring
-	*/
-	virtual bool isRecurring() = 0;
-
-	/*!
-		\return true if it is time for the task to execute 
-		\note if both shouldExecute() and isRecurring() return
-		false, then this task will never be executed.
-	*/
-	virtual bool shouldExecute() = 0;
-};
-
-
-//! a reference-counted pointer to a Dispatchable object
-typedef boost::shared_ptr<Dispatchable> DispatchablePtr;
-
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 /*!
 	The DispatchableFunction class is a wrapper to use
 	a function object as a dispatchable task.
 */
-class DispatchableFunction : public Dispatchable, boost::noncopyable {
+class DispatchableFunction : public Dispatchable, private boost::noncopyable {
 public:
 	typedef boost::function0<void> Callable;
 

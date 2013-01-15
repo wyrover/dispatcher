@@ -47,5 +47,8 @@
     <ClInclude Include="Dispatchables.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Dispatchable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
