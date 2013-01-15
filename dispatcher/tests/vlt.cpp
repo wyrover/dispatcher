@@ -2,6 +2,8 @@
 	Very Lite Test (VLT)
 	Copyright (c) 2012 Russell Bewley
 
+	http://github.com/rbewley4/vlt
+
 	VLT is free software released under the MIT License
 	(http://www.opensource.org/licenses/mit-license.php)
 */

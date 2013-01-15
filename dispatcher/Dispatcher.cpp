@@ -2,6 +2,8 @@
 	Dispatcher
 	Copyright (c) 2012 Russell Bewley
 
+	http://github.com/rbewley4/dispatcher
+
 	Dispatcher is free software released under the MIT License
 	(http://www.opensource.org/licenses/mit-license.php)
 */
@@ -27,9 +29,6 @@ class Dispatcher::Impl : boost::noncopyable {
 public:
 	typedef Dispatcher::TaskPtr TaskPtr;
 	typedef boost::shared_ptr<boost::thread> ThreadPtr;
-	typedef Dispatcher::time_duration time_duration;
-	
-	static const int DEFAULT_WAIT_TIMEOUT = 500; // milliseconds
 
 	Impl(): 
 		thread_(),
@@ -38,7 +37,6 @@ public:
 		tasks_(),
 		queueMutex_(),
 		dataReadyCondition_(),
-		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT)),
 		waitEnabled_(true)
 	{
 	}
@@ -50,23 +48,6 @@ public:
 		tasks_(),
 		queueMutex_(),
 		dataReadyCondition_(),
-		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT)),
-		waitEnabled_(true)
-	{
-		if(startImmediately)
-		{
-			start();
-		}
-	}
-
-	Impl(bool startImmediately, const time_duration& waitTimeout):
-		thread_(),
-		threadMutex_(),
-		stopRequested_(false),
-		tasks_(),
-		queueMutex_(),
-		dataReadyCondition_(),
-		waitTimeout_(waitTimeout),
 		waitEnabled_(true)
 	{
 		if(startImmediately)
@@ -82,7 +63,6 @@ public:
 		tasks_(),
 		queueMutex_(),
 		dataReadyCondition_(),
-		waitTimeout_(boost::posix_time::milliseconds(DEFAULT_WAIT_TIMEOUT)),
 		waitEnabled_(!disableWait)
 	{
 		if(startImmediately)
@@ -200,9 +180,12 @@ private:
 				}
 				else if(waitEnabled_ && !task && !stopRequested_)
 				{
-					// queue is empty, so wait for somethign to become available
-					boost::unique_lock<boost::mutex> dataReadyLock(dataReadyMutex_);
-					dataReadyCondition_.timed_wait(dataReadyLock, waitTimeout_);
+					// queue may be empty
+					boost::unique_lock<boost::mutex> queueLock(queueMutex_);					
+					if(this->tasks_.empty()) {
+						// queue is empty, so wait for a new task to be dispatched
+						dataReadyCondition_.wait(queueLock);
+					}
 				}
 			}
 		}
@@ -277,9 +260,7 @@ private:
 	volatile bool stopRequested_;
 	std::queue<TaskPtr> tasks_;
 	mutable boost::mutex queueMutex_;
-	mutable boost::mutex dataReadyMutex_;
 	mutable boost::condition_variable dataReadyCondition_;
-	time_duration waitTimeout_;
 	bool waitEnabled_;
 };
 
@@ -298,12 +279,6 @@ Dispatcher::Dispatcher(bool startImmediately):
 	impl_()
 {
 	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately));
-}
-
-Dispatcher::Dispatcher(bool startImmediately, const time_duration& waitTimeout):
-	impl_()
-{
-	impl_ = boost::shared_ptr<Impl>(new Impl(startImmediately, waitTimeout));
 }
 
 Dispatcher::Dispatcher(bool startImmediately, bool disableWait):

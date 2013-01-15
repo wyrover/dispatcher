@@ -2,6 +2,8 @@
 	Dispatcher
 	Copyright (c) 2012 Russell Bewley
 
+	http://github.com/rbewley4/dispatcher
+
 	Dispatcher is free software released under the MIT License
 	(http://www.opensource.org/licenses/mit-license.php)
 */
@@ -49,7 +51,6 @@ namespace {
 	{
 		Dispatcher d1;
 		Dispatcher d2(false);
-		Dispatcher d3(false, boost::posix_time::milliseconds(5000));
 	}
 
 	TEST(Dispatcher, StartAndStop)

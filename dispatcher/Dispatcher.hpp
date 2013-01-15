@@ -2,6 +2,8 @@
 	Dispatcher
 	Copyright (c) 2012 Russell Bewley
 
+	http://github.com/rbewley4/dispatcher
+
 	Dispatcher is free software released under the MIT License
 	(http://www.opensource.org/licenses/mit-license.php)
 */
@@ -26,22 +28,8 @@
 	a deadlock; however, tasks that dispatch other
 	tasks with the same dispatcher will work fine.
 
-	\warning It is possible to enter a situation where 
-	the worker thread goes to sleep at the same time a 
-	new task is dispatched. In this situation, the thread
-	may not wake up for a long time, so it is important to
-	tune the timeout value to whatever tolerance you need. 
-	This usually does not happen. This is just a fallback 
-	in case it does. The default timeout period is 500 
-	milliseconds.
-
-	\note if the dispatcher is already running, calling 
-	start() again will wake the worker thread. you may do
-	this after dispatching tasks to ensure that the worker 
-	thread isn't sleeping while there is work to be done.
-
-	\note if you need real-time performance, you must
-	disable the worker thread's wait behavior. this will
+	\note If you need real-time performance, you should
+	disable the worker thread's wait behavior. This will
 	prevent it from going idle.
 */
 class Dispatcher : boost::noncopyable {
@@ -49,20 +37,12 @@ public:
 	typedef DispatchableFunction Task; // this is chosen as the default 
 	                                   // Dispatchable for backwards compatibility
 	typedef DispatchablePtr TaskPtr;
-	typedef boost::posix_time::time_duration time_duration;
 
 	//! construct a Dispatcher that must be started manually
 	Dispatcher();
 
 	//! construct a Dispatcher and optionally start it immediately.
 	explicit Dispatcher(bool startImmediately);
-
-	/*!
-		construct a Dispatcher and optionally start it immediately.
-		also specify the maximum amount of time that the worker thread
-		should wait for a new task to be dispatched before waking up.
-	*/
-	explicit Dispatcher(bool startImmediately, const time_duration& waitTimeout);
 
 	/*!
 		construct a Dispatcher and optionally start it immediately.

@@ -2,6 +2,8 @@
 	Dispatcher
 	Copyright (c) 2013 Russell Bewley
 
+	http://github.com/rbewley4/dispatcher
+
 	Dispatcher is free software released under the MIT License
 	(http://www.opensource.org/licenses/mit-license.php)
 */
